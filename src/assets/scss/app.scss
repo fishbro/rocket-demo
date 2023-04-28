@@ -7,7 +7,8 @@ body {
     font-family: "Roboto", sans-serif;
     font-size: 14px;
     color: #333;
-    background-color: #001;
+    //background-color: #001;
+    background: radial-gradient(100% 50% at 50% 100%, #005d8a, #000 80%);
 }
 
 .App {

@@ -15,8 +15,9 @@ class RocketView {
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     fireMesh: THREE.Points | null = null;
-    rocket: THREE.Group = new THREE.Group();
-    earth: THREE.Group = new THREE.Group();
+    rocket: THREE.Group | null = null;
+    rocketContainer: THREE.Group = new THREE.Group();
+    earthContainer: THREE.Group = new THREE.Group();
 
     constructor(root: HTMLElement) {
         this.root = root;
@@ -27,7 +28,8 @@ class RocketView {
             100
         );
         this.renderer = new THREE.WebGLRenderer({
-            antialias: true
+            antialias: true,
+            alpha: true
         });
         this.root.appendChild(this.renderer.domElement);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -37,7 +39,7 @@ class RocketView {
 
     async init() {
         this.camera.position.z = 1;
-        this.scene.background = new THREE.Color(0x000011);
+        // this.scene.background = new THREE.Color(0x000011);
 
         await this.loadRocket();
         await this.createPlanet();
@@ -56,9 +58,9 @@ class RocketView {
             this.rocket.rotation.x = time / 2000;
         }
 
-        if (this.earth) {
-            // this.earth.rotation.y = (time / 30000) % (Math.PI * 2);
-            this.earth.rotation.z = (time / 10000) % (Math.PI * 2);
+        if (this.earthContainer) {
+            // this.earthContainer.rotation.y = (time / 30000) % (Math.PI * 2);
+            this.earthContainer.rotation.z = (time / 10000) % (Math.PI * 2);
         }
 
         this.renderer.render(this.scene, this.camera);
@@ -76,32 +78,64 @@ class RocketView {
             options.fireHeight,
             options.particleCount
         );
-        const fireMaterial = new particleFire.Material({ color: 0xff2200 });
+        const fireMaterial = new particleFire.Material({
+            color: 0xff2200
+        });
         fireMaterial.setPerspective(this.camera.fov, options.height);
         this.fireMesh = new THREE.Points(fireGeometry, fireMaterial);
         this.fireMesh.rotation.z = Math.PI / 2;
         // this.fireMesh.position.x = -0.3;
-        this.rocket.add(this.fireMesh);
+        this.rocketContainer.add(this.fireMesh);
     }
 
     createPlanet() {
         return this.textureLoader
             .loadAsync("/static/textures/earth.webp")
             .then(texture => {
-                const geometry = new THREE.SphereGeometry(4, 64, 64);
-                const material = new THREE.MeshPhongMaterial({
+                const earthGeometry = new THREE.SphereGeometry(4, 64, 64);
+                texture.anisotropy = 16;
+                const earthMaterial = new THREE.MeshPhongMaterial({
                     map: texture,
                     color: 0xffffff,
                     opacity: 1,
                     transparent: false
                 });
-                const earth = new THREE.Mesh(geometry, material);
-                this.earth.add(earth);
+                const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+                this.earthContainer.add(earth);
 
-                this.earth.position.y = -4.5;
-                this.earth.rotation.y = Math.PI / 6;
-                this.scene.add(this.earth);
+                const atmGeometry = new THREE.SphereGeometry(4.05, 64, 64);
+                const atmMaterial = new THREE.MeshPhongMaterial({
+                    color: 0xffffff,
+                    opacity: 0.1,
+                    transparent: true
+                });
+                const atm = new THREE.Mesh(atmGeometry, atmMaterial);
+                this.earthContainer.add(atm);
+
+                this.createStars();
+
+                this.earthContainer.position.y = -4.5;
+                this.earthContainer.rotation.y = Math.PI / 6;
+
+                this.scene.add(this.earthContainer);
             });
+    }
+
+    createStars() {
+        for (let i = 0; i < 1000; i++) {
+            const geometry = new THREE.PlaneGeometry(0.01, 0.01, 1);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                opacity: 1,
+                transparent: false
+            });
+            const star = new THREE.Mesh(geometry, material);
+            star.position.x = (Math.random() - 0.5) * 15;
+            star.position.y = (Math.random() - 0.5) * 15;
+            star.position.z = (Math.random() - 0.5) * 15;
+            console.log(star.position.x, star.position.y, star.position.z);
+            this.earthContainer.add(star);
+        }
     }
 
     loadGltf(url: string): Promise<THREE.Group> {
@@ -115,14 +149,15 @@ class RocketView {
 
     loadRocket() {
         return this.loadGltf("/static/models/rocket.gltf").then(object => {
-            const rocket = object;
-            rocket.rotation.z = -Math.PI / 2;
-            rocket.castShadow = true;
-            rocket.receiveShadow = true;
-            this.scene.add(this.rocket);
+            this.rocket = object;
+            this.rocket.rotation.z = -Math.PI / 2;
+            this.rocket.castShadow = true;
+            this.rocket.receiveShadow = true;
+            this.scene.add(this.rocketContainer);
 
-            this.rocket.position.x = -0.3;
-            this.rocket.add(rocket);
+            this.rocketContainer.position.x = -0.3;
+            this.rocketContainer.rotation.y = Math.PI / 12;
+            this.rocketContainer.add(this.rocket);
 
             this.createFire();
         });
