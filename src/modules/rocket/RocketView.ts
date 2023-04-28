@@ -133,7 +133,6 @@ class RocketView {
             star.position.x = (Math.random() - 0.5) * 15;
             star.position.y = (Math.random() - 0.5) * 15;
             star.position.z = (Math.random() - 0.5) * 15;
-            console.log(star.position.x, star.position.y, star.position.z);
             this.earthContainer.add(star);
         }
     }

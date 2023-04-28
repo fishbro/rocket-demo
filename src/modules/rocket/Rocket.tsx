@@ -7,8 +7,6 @@ class Rocket extends Component {
     loading: boolean = true;
 
     componentDidMount() {
-        console.log("App mounted");
-
         if (this.rootElement) {
             this.view = new RocketView(this.rootElement);
             this.view.init().then(() => {
