@@ -5,6 +5,7 @@ class Rocket extends Component {
     view: RocketView | null = null;
     rootElement: HTMLElement | null = null;
     loading: boolean = true;
+    gameStarted: boolean = false;
 
     componentDidMount() {
         if (this.rootElement) {
@@ -21,6 +22,19 @@ class Rocket extends Component {
                 <div className="rocket" ref={el => (this.rootElement = el)} />
                 {this.loading ? (
                     <div className="loading">Loading...</div>
+                ) : !this.gameStarted ? (
+                    <div
+                        className="button"
+                        onClick={() => {
+                            if (this.view) {
+                                this.view.startGame();
+                                this.gameStarted = true;
+                                this.forceUpdate();
+                            }
+                        }}
+                    >
+                        Start Game
+                    </div>
                 ) : null}
             </div>
         );

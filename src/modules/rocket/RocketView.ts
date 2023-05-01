@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import * as TWEEN from "@tweenjs/tween.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Clock } from "three";
 //@ts-ignore
@@ -18,6 +19,7 @@ class RocketView {
     rocket: THREE.Group | null = null;
     rocketContainer: THREE.Group = new THREE.Group();
     earthContainer: THREE.Group = new THREE.Group();
+    gameMode: boolean = false;
 
     constructor(root: HTMLElement) {
         this.root = root;
@@ -46,25 +48,6 @@ class RocketView {
         this.createLight();
         this.renderer.setAnimationLoop(this.animation);
     }
-
-    animation = (time: number) => {
-        const delta = this.clock.getDelta();
-
-        if (this.fireMesh)
-            //@ts-ignore
-            this.fireMesh.material.update(delta);
-
-        if (this.rocket) {
-            this.rocket.rotation.x = time / 2000;
-        }
-
-        if (this.earthContainer) {
-            // this.earthContainer.rotation.y = (time / 30000) % (Math.PI * 2);
-            this.earthContainer.rotation.z = (time / 10000) % (Math.PI * 2);
-        }
-
-        this.renderer.render(this.scene, this.camera);
-    };
 
     createFire() {
         const options = {
@@ -205,6 +188,61 @@ class RocketView {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    startGame() {
+        this.camera.position.z = 3;
+        this.camera.position.y = 1;
+        this.earthContainer.rotation.y = 0;
+        this.rocketContainer.rotation.y = 0;
+        this.gameMode = true;
+        this.root.addEventListener("mousemove", this.onMouseMove);
+        setInterval(() => {
+            this.createAstroid();
+        }, 100);
+    }
+
+    onMouseMove = (e: MouseEvent) => {
+        if (this.gameMode) {
+            const [maxX, minX, maxY, minY] = [3, -3, 2, 0];
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            this.rocketContainer.position.x = minX + (maxX - minX) * x;
+            this.rocketContainer.position.y = minY + (maxY - minY) * y * -1 + 2;
+        }
+    };
+
+    createAstroid() {
+        const geometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            opacity: 1,
+            transparent: false
+        });
+        const astroid = new THREE.Mesh(geometry, material);
+        astroid.position.x = (Math.random() - 0.5) * 15;
+        astroid.position.y = (Math.random() - 0.5) * 15;
+        astroid.position.z = this.rocketContainer.position.z;
+        this.earthContainer.add(astroid);
+    }
+
+    animation = (time: number) => {
+        const delta = this.clock.getDelta();
+
+        if (this.fireMesh)
+            //@ts-ignore
+            this.fireMesh.material.update(delta);
+
+        if (this.rocket) {
+            this.rocket.rotation.x = time / 2000;
+        }
+
+        if (this.earthContainer) {
+            // this.earthContainer.rotation.y = (time / 30000) % (Math.PI * 2);
+            this.earthContainer.rotation.z = (time / 10000) % (Math.PI * 2);
+        }
+
+        this.renderer.render(this.scene, this.camera);
     };
 
     destroy() {
