@@ -217,8 +217,8 @@ class RocketView {
         this.gameMode = true;
         this.root.addEventListener("mousemove", this.onMouseMove);
         setInterval(() => {
-            this.createAstroid();
-        }, 100);
+            this.createAsteroid();
+        }, 500);
     }
 
     onMouseMove = (e: MouseEvent) => {
@@ -228,10 +228,12 @@ class RocketView {
             const y = e.clientY / window.innerHeight;
             this.rocketContainer.position.x = minX + (maxX - minX) * x;
             this.rocketContainer.position.y = minY + (maxY - minY) * y * -1 + 2;
+            this.rocketContainer.rotation.z =
+                (this.rocketContainer.position.x * -Math.PI) / 16;
         }
     };
 
-    createAstroid() {
+    createAsteroid() {
         const geometry = new THREE.SphereGeometry(0.2, 32, 32);
         const material = new THREE.MeshPhongMaterial({
             color: 0xffffff,
@@ -239,9 +241,13 @@ class RocketView {
             transparent: false
         });
         const astroid = new THREE.Mesh(geometry, material);
-        astroid.position.x = (Math.random() - 0.5) * 15;
-        astroid.position.y = (Math.random() - 0.5) * 15;
+        const angle = this.earthContainer.rotation.z;
+        const x_coord = (Math.random() + 0.5) * 7;
+        astroid.position.x = x_coord * Math.cos(angle);
+        astroid.position.y = -x_coord * Math.sin(angle);
         astroid.position.z = this.rocketContainer.position.z;
+
+        // console.log(this.earthContainer.rotation.z / Math.PI / 2);
         this.earthContainer.add(astroid);
     }
 
