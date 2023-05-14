@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { Clock } from "three";
+import { Clock, Mesh } from "three";
 //@ts-ignore
 import particleFire from "three-particle-fire";
 import TweenServer from "../misc/TweenServer";
@@ -21,6 +21,7 @@ class RocketView {
     rocketContainer: THREE.Group = new THREE.Group();
     earthContainer: THREE.Group = new THREE.Group();
     gameMode: boolean = false;
+    asteroids: Array<Mesh> = [];
 
     constructor(root: HTMLElement) {
         this.root = root;
@@ -216,9 +217,6 @@ class RocketView {
 
         this.gameMode = true;
         this.root.addEventListener("mousemove", this.onMouseMove);
-        setInterval(() => {
-            this.createAsteroid();
-        }, 500);
     }
 
     onMouseMove = (e: MouseEvent) => {
@@ -234,21 +232,32 @@ class RocketView {
     };
 
     createAsteroid() {
-        const geometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const geometry = new THREE.ConeGeometry(0.1, 0.1, 3);
         const material = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
+            color: 0x666666,
             opacity: 1,
             transparent: false
         });
-        const astroid = new THREE.Mesh(geometry, material);
+        const asteroid = new THREE.Mesh(geometry, material);
         const angle = this.earthContainer.rotation.z;
-        const x_coord = (Math.random() + 0.5) * 7;
-        astroid.position.x = x_coord * Math.cos(angle);
-        astroid.position.y = -x_coord * Math.sin(angle);
-        astroid.position.z = this.rocketContainer.position.z;
+        const x_coord = (Math.random() + 0.5) * 5;
+        asteroid.position.x = x_coord * Math.cos(angle);
+        asteroid.position.y = -x_coord * Math.sin(angle);
+        asteroid.position.z = this.rocketContainer.position.z;
 
-        // console.log(this.earthContainer.rotation.z / Math.PI / 2);
-        this.earthContainer.add(astroid);
+        this.asteroids.push(asteroid);
+        this.earthContainer.add(asteroid);
+    }
+
+    removeAsteroids() {
+        this.asteroids.forEach(asteroid => {
+            const position = new THREE.Vector3();
+            asteroid.getWorldPosition(position);
+            if (position.x < 0 && position.y < -4.5) {
+                this.earthContainer.remove(asteroid);
+                this.asteroids.splice(this.asteroids.indexOf(asteroid), 1);
+            }
+        });
     }
 
     animation = (time: number) => {
@@ -269,6 +278,18 @@ class RocketView {
 
         if (this.earthContainer) {
             this.earthContainer.rotation.z = (time / 10000) % (Math.PI * 2);
+        }
+
+        if (this.gameMode) {
+            if (time % 1000 > 950) {
+                this.createAsteroid();
+                this.removeAsteroids();
+            }
+
+            this.asteroids.forEach(asteroid => {
+                asteroid.rotation.z = (time / 10000) * asteroid.position.x;
+                asteroid.rotation.y = (time / 10000) * asteroid.position.x;
+            });
         }
 
         this.renderer.render(this.scene, this.camera);
