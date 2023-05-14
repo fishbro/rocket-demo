@@ -260,6 +260,20 @@ class RocketView {
         });
     }
 
+    collisionDetection() {
+        if (!this.rocket) return;
+        const rocketPosition = new THREE.Vector3();
+        this.rocket.getWorldPosition(rocketPosition);
+
+        this.asteroids.forEach(asteroid => {
+            const asteroidPosition = new THREE.Vector3();
+            asteroid.getWorldPosition(asteroidPosition);
+            if (rocketPosition.distanceTo(asteroidPosition) < 0.15) {
+                alert("Game Over");
+            }
+        });
+    }
+
     animation = (time: number) => {
         const delta = this.clock.getDelta();
         if (tweenServer.tweens.length > 0) {
@@ -290,6 +304,8 @@ class RocketView {
                 asteroid.rotation.z = (time / 10000) * asteroid.position.x;
                 asteroid.rotation.y = (time / 10000) * asteroid.position.x;
             });
+
+            this.collisionDetection();
         }
 
         this.renderer.render(this.scene, this.camera);
