@@ -1,11 +1,12 @@
 import * as THREE from "three";
-import * as TWEEN from "@tweenjs/tween.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Clock } from "three";
 //@ts-ignore
 import particleFire from "three-particle-fire";
+import TweenServer from "../misc/TweenServer";
 
 particleFire.install({ THREE: THREE });
+const tweenServer = new TweenServer();
 
 class RocketView {
     root: HTMLElement;
@@ -191,10 +192,28 @@ class RocketView {
     };
 
     startGame() {
-        this.camera.position.z = 3;
-        this.camera.position.y = 1;
-        this.earthContainer.rotation.y = 0;
-        this.rocketContainer.rotation.y = 0;
+        tweenServer.setTween(
+            {
+                camera_z: this.camera.position.z,
+                camera_y: this.camera.position.y,
+                earth_rotation: this.earthContainer.rotation.y,
+                rocket_rotation: this.rocketContainer.rotation.y
+            },
+            {
+                camera_z: 3,
+                camera_y: 1,
+                earth_rotation: 0,
+                rocket_rotation: 0
+            },
+            1000,
+            res => {
+                this.camera.position.z = res.camera_z;
+                this.camera.position.y = res.camera_y;
+                this.earthContainer.rotation.y = res.earth_rotation;
+                this.rocketContainer.rotation.y = res.rocket_rotation;
+            }
+        );
+
         this.gameMode = true;
         this.root.addEventListener("mousemove", this.onMouseMove);
         setInterval(() => {
@@ -228,6 +247,11 @@ class RocketView {
 
     animation = (time: number) => {
         const delta = this.clock.getDelta();
+        if (tweenServer.tweens.length > 0) {
+            tweenServer.tweens.forEach(tween => {
+                tween.update(time);
+            });
+        }
 
         if (this.fireMesh)
             //@ts-ignore
@@ -238,7 +262,6 @@ class RocketView {
         }
 
         if (this.earthContainer) {
-            // this.earthContainer.rotation.y = (time / 30000) % (Math.PI * 2);
             this.earthContainer.rotation.z = (time / 10000) % (Math.PI * 2);
         }
 
