@@ -4,6 +4,7 @@ import TweenServer from "../../misc/TweenServer";
 import { RocketController } from "./RocketController";
 import { EarthController } from "./EarthController";
 import { AnimationController } from "./AnimationController";
+import Rocket from "../Rocket";
 
 const tweenServer = new TweenServer();
 
@@ -130,10 +131,13 @@ class SceneView {
         this.root.focus();
         this.gameMode = true;
         this.animationController.add(this.gameLoop);
+        this.root.addEventListener("touchstart", this.turnOn);
+        this.root.addEventListener("touchend", this.turnOff);
         this.root.addEventListener("mousedown", this.turnOn);
         this.root.addEventListener("mouseup", this.turnOff);
         this.root.addEventListener("keydown", this.turnOn);
         this.root.addEventListener("keyup", this.turnOff);
+        this.rocketController.startGame();
     }
 
     turnOn = () => {
@@ -226,6 +230,8 @@ class SceneView {
         alert("Game Over");
         this.gameMode = false;
         this.animationController.rem(this.gameLoop);
+        this.root.removeEventListener("touchstart", this.turnOn);
+        this.root.removeEventListener("touchend", this.turnOff);
         this.root.removeEventListener("mousedown", this.turnOn);
         this.root.removeEventListener("mouseup", this.turnOff);
         this.root.removeEventListener("keydown", this.turnOn);
@@ -241,6 +247,7 @@ class SceneView {
                 camera_y: this.camera.position.y,
                 earth_rotation: this.earthController.container.rotation.y,
                 rocket_rotation: this.rocketController.container.rotation.y,
+                rocket_rotation_z: this.rocketController.container.rotation.z,
                 rocket_y: this.rocketController.container.position.y
             },
             {
@@ -248,6 +255,7 @@ class SceneView {
                 camera_y: 0,
                 earth_rotation: Math.PI / 6,
                 rocket_rotation: Math.PI / 12,
+                rocket_rotation_z: 0,
                 rocket_y: 0
             },
             1000,
@@ -257,9 +265,13 @@ class SceneView {
                 this.earthController.container.rotation.y = res.earth_rotation;
                 this.rocketController.container.rotation.y =
                     res.rocket_rotation;
+                this.rocketController.container.rotation.z =
+                    res.rocket_rotation_z;
                 this.rocketController.container.position.y = res.rocket_y;
             }
         );
+
+        Rocket.eventEmitter.emit("gameOver");
     }
 
     destroy() {

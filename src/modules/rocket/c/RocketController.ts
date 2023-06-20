@@ -11,13 +11,16 @@ export class RocketController {
     container: THREE.Group = new THREE.Group();
     isFlying: boolean = false;
     flyVelocity: number = 0.015;
-    currentFlyVelocity: number = 0;
+    currentFlyVelocity: number = 0.015;
+    engine: THREE.Points<any, any> | null = null;
 
     constructor(private camera: THREE.PerspectiveCamera) {}
 
     init() {
         return this.loadRocket().then(() => {
             this.createFire(this.camera);
+            this.engine = this.createFire(this.camera, { color: 0x0000ff });
+            this.engine.visible = false;
             const animationController = AnimationController.getInstance();
             animationController.add(this.baseAnimation);
 
@@ -41,7 +44,7 @@ export class RocketController {
         );
     }
 
-    createFire(camera: THREE.PerspectiveCamera) {
+    createFire(camera: THREE.PerspectiveCamera, _options?: any) {
         const options = {
             fireRadius: 0.025,
             fireHeight: 1,
@@ -54,7 +57,7 @@ export class RocketController {
             options.particleCount
         );
         const fireMaterial = new particleFire.Material({
-            color: 0xff2200
+            color: _options?.color || 0xff2200
         });
         fireMaterial.setPerspective(camera.fov, options.height);
         const fireMesh = new THREE.Points(fireGeometry, fireMaterial);
@@ -66,6 +69,8 @@ export class RocketController {
         animationController.add((_time: number, delta: number) => {
             fireMesh.material.update(delta);
         });
+
+        return fireMesh;
     }
 
     baseAnimation = (time: number, _delta: number) => {
@@ -74,48 +79,50 @@ export class RocketController {
         }
     };
 
-    flyTransition = () => {
-        //TODO: add easing
-        this.currentFlyVelocity = this.flyVelocity;
-    };
-
     flyUp = () => {
         if (!this.isFlying) {
             this.isFlying = true;
-            this.flyTransition();
-            const animationController = AnimationController.getInstance();
-            animationController.add(this.flyUpAnimation);
-            animationController.rem(this.flyDownAnimation);
+            if (this.engine) this.engine.visible = true;
         }
     };
 
     flyDown = () => {
         if (this.isFlying) {
             this.isFlying = false;
-            this.flyTransition();
-            const animationController = AnimationController.getInstance();
-            animationController.rem(this.flyUpAnimation);
-            animationController.add(this.flyDownAnimation);
+            if (this.engine) this.engine.visible = false;
         }
     };
 
-    flyUpAnimation = (time: number, _delta: number) => {
-        if (this.container && this.container.position.y < 2) {
-            this.container.position.y += this.currentFlyVelocity;
-            // console.log(this.container.position.y);
-        }
-    };
-
-    flyDownAnimation = (time: number, _delta: number) => {
+    flyAnimation = (time: number, _delta: number) => {
         if (this.container) {
-            this.container.position.y -= this.currentFlyVelocity;
-            // console.log(this.container.position.y);
+            this.container.position.y += this.currentFlyVelocity;
+            this.container.rotation.z = this.currentFlyVelocity * 10;
+
+            if (this.container.position.y > 2.3) {
+                this.container.position.y = 2.3;
+                this.currentFlyVelocity = 0;
+            }
         }
+
+        if (this.isFlying) {
+            this.currentFlyVelocity +=
+                this.currentFlyVelocity > this.flyVelocity ? 0 : 0.00015;
+        } else {
+            this.currentFlyVelocity -=
+                this.currentFlyVelocity < this.flyVelocity * -2 ? 0 : 0.0002;
+        }
+    };
+
+    startGame = () => {
+        this.isFlying = false;
+        this.currentFlyVelocity = this.flyVelocity;
+        const animationController = AnimationController.getInstance();
+        animationController.add(this.flyAnimation);
     };
 
     stopGame = () => {
         const animationController = AnimationController.getInstance();
-        animationController.rem(this.flyUpAnimation);
-        animationController.rem(this.flyDownAnimation);
+        animationController.rem(this.flyAnimation);
+        if (this.engine) this.engine.visible = false;
     };
 }

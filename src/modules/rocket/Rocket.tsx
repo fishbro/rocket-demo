@@ -1,11 +1,13 @@
 import React, { Component } from "react";
 import SceneView from "./c/SceneView";
+import EventEmitter from "events";
 
 class Rocket extends Component {
     view: SceneView | null = null;
     rootElement: HTMLElement | null = null;
     loading: boolean = true;
     gameStarted: boolean = false;
+    static eventEmitter = new EventEmitter();
 
     componentDidMount() {
         if (this.rootElement) {
@@ -15,6 +17,11 @@ class Rocket extends Component {
                 this.forceUpdate();
             });
         }
+
+        Rocket.eventEmitter.on("gameOver", () => {
+            this.gameStarted = false;
+            this.forceUpdate();
+        });
     }
     render() {
         return (
