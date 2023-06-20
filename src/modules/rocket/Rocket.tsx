@@ -1,15 +1,15 @@
 import React, { Component } from "react";
-import RocketView from "./RocketView";
+import SceneView from "./c/SceneView";
 
 class Rocket extends Component {
-    view: RocketView | null = null;
+    view: SceneView | null = null;
     rootElement: HTMLElement | null = null;
     loading: boolean = true;
     gameStarted: boolean = false;
 
     componentDidMount() {
         if (this.rootElement) {
-            this.view = new RocketView(this.rootElement);
+            this.view = new SceneView(this.rootElement);
             this.view.init().then(() => {
                 this.loading = false;
                 this.forceUpdate();
