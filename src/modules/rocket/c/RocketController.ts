@@ -9,6 +9,9 @@ particleFire.install({ THREE: THREE });
 export class RocketController {
     model: THREE.Group | null = null;
     container: THREE.Group = new THREE.Group();
+    isFlying: boolean = false;
+    flyVelocity: number = 0.015;
+    currentFlyVelocity: number = 0;
 
     constructor(private camera: THREE.PerspectiveCamera) {}
 
@@ -69,5 +72,50 @@ export class RocketController {
         if (this.model) {
             this.model.rotation.x = time / 2000;
         }
+    };
+
+    flyTransition = () => {
+        //TODO: add easing
+        this.currentFlyVelocity = this.flyVelocity;
+    };
+
+    flyUp = () => {
+        if (!this.isFlying) {
+            this.isFlying = true;
+            this.flyTransition();
+            const animationController = AnimationController.getInstance();
+            animationController.add(this.flyUpAnimation);
+            animationController.rem(this.flyDownAnimation);
+        }
+    };
+
+    flyDown = () => {
+        if (this.isFlying) {
+            this.isFlying = false;
+            this.flyTransition();
+            const animationController = AnimationController.getInstance();
+            animationController.rem(this.flyUpAnimation);
+            animationController.add(this.flyDownAnimation);
+        }
+    };
+
+    flyUpAnimation = (time: number, _delta: number) => {
+        if (this.container && this.container.position.y < 2) {
+            this.container.position.y += this.currentFlyVelocity;
+            // console.log(this.container.position.y);
+        }
+    };
+
+    flyDownAnimation = (time: number, _delta: number) => {
+        if (this.container) {
+            this.container.position.y -= this.currentFlyVelocity;
+            // console.log(this.container.position.y);
+        }
+    };
+
+    stopGame = () => {
+        const animationController = AnimationController.getInstance();
+        animationController.rem(this.flyUpAnimation);
+        animationController.rem(this.flyDownAnimation);
     };
 }

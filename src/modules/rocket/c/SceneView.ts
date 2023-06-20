@@ -126,21 +126,23 @@ class SceneView {
             }
         );
 
+        this.root.tabIndex = 0;
+        this.root.focus();
         this.gameMode = true;
-        // this.root.addEventListener("mousemove", this.onMouseMove);
+        this.animationController.add(this.gameLoop);
+        this.root.addEventListener("mousedown", this.turnOn);
+        this.root.addEventListener("mouseup", this.turnOff);
+        this.root.addEventListener("keydown", this.turnOn);
+        this.root.addEventListener("keyup", this.turnOff);
     }
 
-    // onMouseMove = (e: MouseEvent) => {
-    //     if (this.gameMode) {
-    //         const [maxX, minX, maxY, minY] = [3, -3, 2, 0];
-    //         const x = e.clientX / window.innerWidth;
-    //         const y = e.clientY / window.innerHeight;
-    //         this.container.position.x = minX + (maxX - minX) * x;
-    //         this.container.position.y = minY + (maxY - minY) * y * -1 + 2;
-    //         this.container.rotation.z =
-    //             (this.container.position.x * -Math.PI) / 16;
-    //     }
-    // };
+    turnOn = () => {
+        this.rocketController.flyUp();
+    };
+
+    turnOff = () => {
+        this.rocketController.flyDown();
+    };
 
     createAsteroid() {
         const geometry = new THREE.ConeGeometry(0.1, 0.1, 3);
@@ -171,19 +173,27 @@ class SceneView {
         });
     }
 
-    // collisionDetection() {
-    //     if (!this.rocket) return;
-    //     const rocketPosition = new THREE.Vector3();
-    //     this.rocket.getWorldPosition(rocketPosition);
-    //
-    //     this.asteroids.forEach(asteroid => {
-    //         const asteroidPosition = new THREE.Vector3();
-    //         asteroid.getWorldPosition(asteroidPosition);
-    //         if (rocketPosition.distanceTo(asteroidPosition) < 0.15) {
-    //             alert("Game Over");
-    //         }
-    //     });
-    // }
+    collisionDetection() {
+        const rocket = this.rocketController.model;
+        if (!rocket) return;
+        const rocketPosition = new THREE.Vector3();
+        rocket.getWorldPosition(rocketPosition);
+        rocketPosition.x += 0.4;
+
+        const earthPosition = new THREE.Vector3();
+        this.earthController.container.getWorldPosition(earthPosition);
+        if (rocketPosition.distanceTo(earthPosition) < 4) {
+            this.gameOver();
+        }
+
+        this.asteroids.forEach(asteroid => {
+            const asteroidPosition = new THREE.Vector3();
+            asteroid.getWorldPosition(asteroidPosition);
+            if (rocketPosition.distanceTo(asteroidPosition) < 0.2) {
+                this.gameOver();
+            }
+        });
+    }
 
     animation = (time: number) => {
         if (tweenServer.tweens.length > 0) {
@@ -196,21 +206,61 @@ class SceneView {
             this.earthController.container.rotation.z =
                 (time / 10000) % (Math.PI * 2);
         }
-
-        if (this.gameMode) {
-            if (time % 1000 > 950) {
-                this.createAsteroid();
-                this.removeAsteroids();
-            }
-
-            this.asteroids.forEach(asteroid => {
-                asteroid.rotation.z = (time / 10000) * asteroid.position.x;
-                asteroid.rotation.y = (time / 10000) * asteroid.position.x;
-            });
-
-            // this.collisionDetection();
-        }
     };
+
+    gameLoop = (time: number) => {
+        if (time % 1000 > 950) {
+            this.createAsteroid();
+            this.removeAsteroids();
+        }
+
+        this.asteroids.forEach(asteroid => {
+            asteroid.rotation.z = (time / 10000) * asteroid.position.x;
+            asteroid.rotation.y = (time / 10000) * asteroid.position.x;
+        });
+
+        this.collisionDetection();
+    };
+
+    gameOver() {
+        alert("Game Over");
+        this.gameMode = false;
+        this.animationController.rem(this.gameLoop);
+        this.root.removeEventListener("mousedown", this.turnOn);
+        this.root.removeEventListener("mouseup", this.turnOff);
+        this.root.removeEventListener("keydown", this.turnOn);
+        this.root.removeEventListener("keyup", this.turnOff);
+        this.rocketController.stopGame();
+        this.asteroids.forEach(asteroid => {
+            this.earthController.container.remove(asteroid);
+        });
+
+        tweenServer.setTween(
+            {
+                camera_z: this.camera.position.z,
+                camera_y: this.camera.position.y,
+                earth_rotation: this.earthController.container.rotation.y,
+                rocket_rotation: this.rocketController.container.rotation.y,
+                rocket_y: this.rocketController.container.position.y
+            },
+            {
+                camera_z: 1,
+                camera_y: 0,
+                earth_rotation: Math.PI / 6,
+                rocket_rotation: Math.PI / 12,
+                rocket_y: 0
+            },
+            1000,
+            res => {
+                this.camera.position.z = res.camera_z;
+                this.camera.position.y = res.camera_y;
+                this.earthController.container.rotation.y = res.earth_rotation;
+                this.rocketController.container.rotation.y =
+                    res.rocket_rotation;
+                this.rocketController.container.position.y = res.rocket_y;
+            }
+        );
+    }
 
     destroy() {
         window.removeEventListener("resize", this.resizeFn);
